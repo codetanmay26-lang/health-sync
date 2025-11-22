@@ -33,6 +33,8 @@ A modern React-based project utilizing the latest frontend technologies and tool
    npm start
    # or
    yarn start
+   and
+   npm install jspdf tesseract.js react-pdftotext
    ```
 
 ## 📁 Project Structure

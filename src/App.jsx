@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Routes from './Routes';
 import ErrorBoundary from './components/ErrorBoundary';
+import Toast from './components/ui/Toast'; // Add this import
 import './styles/index.css';
 
 const App = () => {
@@ -11,6 +12,7 @@ const App = () => {
       <BrowserRouter>
         <AuthProvider>
           <Routes />
+          <Toast /> {/* Add this line */}
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>

@@ -15,11 +15,18 @@ import MessagingInterface from './components/MessagingInterface';
 import NotificationCenter from './components/NotificationCenter';
 import MedicineListViewer from './components/MedicineListViewer';
 import MedicineReminder from './components/MedicineReminder';
+import PrescriptionUploader from './components/PrescriptionUploader';
 
 const PatientPortal = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [patientData, setPatientData] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  
+  // Add state for analyzed medicines at component level (fix for hooks error)
+  const [analyzedMedicines, setAnalyzedMedicines] = useState([]);
+  
+  // Add refresh trigger state for real-time updates
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Calculate real adherence rate from patient medicine-taking reports
   const calculateRealAdherenceRate = () => {
@@ -59,6 +66,25 @@ const PatientPortal = () => {
     };
 
     setPatientData(mockPatientData);
+  }, []);
+
+  // Load analyzed medicines when component mounts or patient data changes
+  useEffect(() => {
+    if (patientData?.id) {
+      const smartReminders = JSON.parse(localStorage.getItem('smartReminders') || '[]');
+      const patientReminders = smartReminders.filter(r => r.patientId === patientData.id);
+      setAnalyzedMedicines(patientReminders);
+    }
+  }, [patientData?.id, refreshTrigger]); // Add refreshTrigger dependency
+
+  // Add event listener for prescription updates
+  useEffect(() => {
+    const handleMedicationsUpdate = () => {
+      setRefreshTrigger(prev => prev + 1);
+    };
+    
+    window.addEventListener('medicationsUpdated', handleMedicationsUpdate);
+    return () => window.removeEventListener('medicationsUpdated', handleMedicationsUpdate);
   }, []);
 
   const breadcrumbItems = [
@@ -112,6 +138,7 @@ const PatientPortal = () => {
     { id: 'overview', label: 'Overview', icon: 'Home' },
     { id: 'medications', label: 'Medications', icon: 'Pill' },
     { id: 'reminders', label: 'Reminders', icon: 'Clock' },
+    { id: 'prescriptions', label: 'Upload Prescription', icon: 'Upload' },
     { id: 'health-logs', label: 'Health Logs', icon: 'Activity' },
     { id: 'lab-reports', label: 'Lab Reports', icon: 'FileText' },
     { id: 'messages', label: 'Messages', icon: 'MessageCircle' },
@@ -250,18 +277,182 @@ const PatientPortal = () => {
     </div>
   );
 
-  // Updated medications tab to include medicine lists and reminders
-  const renderMedicationsTab = () => (
-    <div className="space-y-6">
-      <MedicineReminder patientId={patientData?.id} />
-      <MedicineListViewer patientId={patientData?.id} />
-      <MedicationTimeline 
-        onMedicationTaken={handleMedicationTaken}
-        onMedicationSkipped={handleMedicationSkipped}
-      />
-      <AdherenceCalendar />
-    </div>
-  );
+  // FIXED: Enhanced medications tab with beautiful UI and real-time updates
+  const renderMedicationsTab = () => {
+    const getTimingColor = (timing) => {
+      const colors = {
+        morning: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        afternoon: 'bg-orange-100 text-orange-800 border-orange-200', 
+        evening: 'bg-blue-100 text-blue-800 border-blue-200',
+        night: 'bg-purple-100 text-purple-800 border-purple-200'
+      };
+      return colors[timing] || 'bg-gray-100 text-gray-800 border-gray-200';
+    };
+
+    // Function to refresh medicines from localStorage
+    const refreshMedicines = () => {
+      const smartReminders = JSON.parse(localStorage.getItem('smartReminders') || '[]');
+      const patientReminders = smartReminders.filter(r => r.patientId === patientData?.id);
+      setAnalyzedMedicines(patientReminders);
+      setRefreshTrigger(prev => prev + 1); // Force refresh
+    };
+
+    // Clear all medications function
+    const handleClearAllMedications = () => {
+      if (window.confirm('Are you sure you want to clear all medications? This will remove all current medications and their data.')) {
+        // Clear smart reminders for this patient only
+        const allSmartReminders = JSON.parse(localStorage.getItem('smartReminders') || '[]');
+        const otherPatientReminders = allSmartReminders.filter(r => r.patientId !== patientData?.id);
+        localStorage.setItem('smartReminders', JSON.stringify(otherPatientReminders));
+        
+        // Clear patient medicines for this patient only
+        const allPatientMedicines = JSON.parse(localStorage.getItem('patientMedicines') || '[]');
+        const otherPatientMedicines = allPatientMedicines.filter(m => m.patientId !== patientData?.id);
+        localStorage.setItem('patientMedicines', JSON.stringify(otherPatientMedicines));
+        
+        // Clear adherence reports for this patient only
+        const allAdherenceReports = JSON.parse(localStorage.getItem('adherenceReports') || '[]');
+        const otherPatientReports = allAdherenceReports.filter(r => r.patientId !== patientData?.id);
+        localStorage.setItem('adherenceReports', JSON.stringify(otherPatientReports));
+        
+        // Update state
+        setAnalyzedMedicines([]);
+        
+        alert('All medications cleared successfully!');
+      }
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-surface rounded-lg border border-border p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-text-primary">
+              💊 Your Medications
+            </h3>
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={refreshMedicines}
+                iconName="RefreshCw"
+                iconPosition="left"
+              >
+                Refresh
+              </Button>
+              {analyzedMedicines.length > 0 && (
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={handleClearAllMedications}
+                  iconName="Trash2"
+                  iconPosition="left"
+                >
+                  Clear All
+                </Button>
+              )}
+            </div>
+          </div>
+          <p className="text-text-secondary text-sm mb-6">
+            Medicines from your uploaded prescriptions. Upload prescriptions in the "Upload Prescription" tab.
+          </p>
+
+          {/* Beautiful Medicine Cards - NO UPLOAD BUTTON */}
+          <div className="space-y-4">
+            {analyzedMedicines.map((medicine) => (
+              <div key={medicine.id} className="relative overflow-hidden">
+                {/* Medicine Card */}
+                <div className="flex items-center p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+                  {/* Medicine Icon */}
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg mr-6">
+                    <Icon name="Pill" size={28} className="text-white" />
+                  </div>
+                  
+                  {/* Medicine Info */}
+                  <div className="flex-1">
+                    <h4 className="text-xl font-bold text-gray-900 mb-1">{medicine.medicineName}</h4>
+                    <p className="text-lg text-gray-700 mb-3">{medicine.dosage}</p>
+                    
+                    {/* Schedule & Status Labels */}
+                    <div className="flex items-center space-x-3">
+                      {/* Timing Label */}
+                      <div className={`px-4 py-2 rounded-full text-sm font-semibold shadow-sm ${getTimingColor(medicine.timing)}`}>
+                        <Icon name="Clock" size={14} className="inline mr-2" />
+                        {medicine.timing}
+                      </div>
+                      
+                      {/* Frequency Label */}
+                      <div className="px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                        <Icon name="Repeat" size={14} className="inline mr-2" />
+                        {medicine.frequency || 'Once daily'}
+                      </div>
+                      
+                      {/* Status Label */}
+                      <div className={`px-4 py-2 rounded-full text-sm font-semibold shadow-sm ${
+                        medicine.status === 'taken' ? 'bg-green-100 text-green-800 border border-green-200' :
+                        medicine.status === 'missed' ? 'bg-red-100 text-red-800 border border-red-200' :
+                        'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                      }`}>
+                        <Icon 
+                          name={medicine.status === 'taken' ? 'CheckCircle' : medicine.status === 'missed' ? 'XCircle' : 'Clock'} 
+                          size={14} 
+                          className="inline mr-2" 
+                        />
+                        {medicine.status === 'taken' ? 'Taken' : medicine.status === 'missed' ? 'Missed' : 'Pending'}
+                      </div>
+                    </div>
+                    
+                    {/* Instructions */}
+                    {medicine.instructions && (
+                      <p className="text-sm text-gray-600 mt-3 italic">
+                        <Icon name="Info" size={14} className="inline mr-1" />
+                        {medicine.instructions}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Next Dose Indicator */}
+                  <div className="text-right">
+                    <p className="text-sm text-gray-500 mb-1">Next Dose</p>
+                    <p className="text-lg font-semibold text-indigo-600">
+                      {medicine.timing === 'morning' ? '8:00 AM' : 
+                       medicine.timing === 'afternoon' ? '1:00 PM' :
+                       medicine.timing === 'evening' ? '6:00 PM' : '10:00 PM'}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Decorative Border */}
+                <div className="absolute inset-0 rounded-xl border-2 border-transparent bg-gradient-to-r from-blue-500 to-indigo-600 opacity-10 pointer-events-none"></div>
+              </div>
+            ))}
+            
+            {/* Beautiful Empty State */}
+            {analyzedMedicines.length === 0 && (
+              <div className="text-center py-16">
+                <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                  <Icon name="Pill" size={40} className="text-gray-400" />
+                </div>
+                <h4 className="text-xl font-bold text-gray-900 mb-2">No Medications Found</h4>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  Upload a prescription to automatically extract your medications and create smart reminders
+                </p>
+                <Button 
+                  variant="default" 
+                  size="lg"
+                  onClick={() => setActiveTab('prescriptions')}
+                  iconName="Upload"
+                  iconPosition="left"
+                  className="px-8 py-3 text-lg"
+                >
+                  Upload Your First Prescription
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderRemindersTab = () => (
     <MedicineReminder patientId={patientData?.id} />
@@ -298,6 +489,12 @@ const PatientPortal = () => {
         return renderMedicationsTab();
       case 'reminders':
         return renderRemindersTab();
+      case 'prescriptions':
+        return (
+          <div className="space-y-6">
+            <PrescriptionUploader patientId={patientData?.id} />
+          </div>
+        );
       case 'health-logs':
         return renderHealthLogsTab();
       case 'lab-reports':
@@ -332,10 +529,10 @@ const PatientPortal = () => {
         userName={patientData?.name}
         onToggleSidebar={() => {}}
       />
-      <EmergencyAlertBanner 
+      {/* <EmergencyAlertBanner 
         userRole="patient" 
         alerts={emergencyAlerts}
-      />
+      /> */}
       <main className="pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <BreadcrumbNavigation 
