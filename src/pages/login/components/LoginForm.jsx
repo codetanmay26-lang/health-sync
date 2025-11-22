@@ -139,20 +139,6 @@ const LoginForm = ({ onLogin, isLoading, error }) => {
       >
         {isLoading ? 'Signing In...' : 'Sign In'}
       </Button>
-      {/* Register Link */}
-      <div className="text-center">
-        <span className="text-sm text-text-secondary">
-          Don't have an account?{' '}
-          <button
-            type="button"
-            onClick={() => window.location.href = '/register'}
-            className="text-primary hover:text-primary/80 font-medium transition-medical"
-            disabled={isLoading}
-          >
-            Register here
-          </button>
-        </span>
-      </div>
     </form>
   );
 };

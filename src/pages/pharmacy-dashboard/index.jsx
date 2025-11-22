@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import Header from '../../components/ui/Header';
-import EmergencyAlertBanner from '../../components/ui/EmergencyAlertBanner';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 
 // Import dashboard components
 import InventoryOverview from './components/InventoryOverview';
 import RefillRequestsPanel from './components/RefillRequestsPanel';
-import ColdChainMonitoring from './components/ColdChainMonitoring';
 import AnalyticsCharts from './components/AnalyticsCharts';
 import EmergencyAlertsPanel from './components/EmergencyAlertsPanel';
 
@@ -27,7 +25,6 @@ const PharmacyDashboard = () => {
       monthlyRevenue: 148250,
       automationRate: 82,
       averageTurnover: 4.5,
-      coldChainStatus: 'normal'
     };
     setDashboardStats(mockStats);
 
@@ -45,18 +42,6 @@ const PharmacyDashboard = () => {
         actionLabel: 'Reorder Now',
         actionUrl: '/pharmacy-dashboard'
       },
-      {
-        id: 'notif-002',
-        type: 'system',
-        priority: 'high',
-        title: 'Cold Chain Alert',
-        message: 'Temperature fluctuation detected in Refrigerator 1',
-        timestamp: new Date()?.toISOString(),
-        roles: ['pharmacy'],
-        active: true,
-        actionLabel: 'Check Status',
-        actionUrl: '/pharmacy-dashboard'
-      }
     ];
     setNotifications(mockNotifications);
   }, []);
@@ -69,11 +54,6 @@ const PharmacyDashboard = () => {
   const handleRefillProcess = (request) => {
     console.log('Processing refill:', request);
     // Handle refill processing
-  };
-
-  const handleColdChainAlert = (alert) => {
-    console.log('Cold chain alert:', alert);
-    // Handle cold chain alerts
   };
 
   const handleEmergencyAction = (alert) => {
@@ -94,7 +74,6 @@ const PharmacyDashboard = () => {
     { id: 'overview', label: 'Overview', icon: 'LayoutDashboard' },
     { id: 'inventory', label: 'Inventory', icon: 'Package' },
     { id: 'refills', label: 'Refills', icon: 'RefreshCw' },
-    { id: 'cold-chain', label: 'Cold Chain', icon: 'Thermometer' },
     { id: 'analytics', label: 'Analytics', icon: 'BarChart3' },
     { id: 'alerts', label: 'Alerts', icon: 'AlertTriangle' }
   ];
@@ -261,13 +240,6 @@ const PharmacyDashboard = () => {
               <RefillRequestsPanel 
                 onProcessRefill={handleRefillProcess}
                 onContactPatient={(request) => console.log('Contact patient:', request)}
-              />
-            )}
-
-            {activeTab === 'cold-chain' && (
-              <ColdChainMonitoring 
-                onAlertAcknowledge={handleColdChainAlert}
-                onViewDetails={(alert) => console.log('View cold chain details:', alert)}
               />
             )}
 

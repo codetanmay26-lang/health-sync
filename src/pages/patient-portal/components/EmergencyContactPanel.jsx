@@ -11,7 +11,7 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
       id: 1,
       name: "Dr. Sarah Johnson",
       role: "Primary Care Physician",
-      phone: "+1 (555) 123-4567",
+      phone: "+91 9456XXXX",
       email: "sarah.johnson@healthsync.com",
       availability: "Mon-Fri 8AM-6PM",
       status: "available",
@@ -21,7 +21,7 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
       id: 2,
       name: "City General Hospital",
       role: "Emergency Department",
-      phone: "+1 (555) 911-0000",
+      phone: "+91 9845XXXX",
       email: "emergency@citygeneral.com",
       availability: "24/7",
       status: "available",
@@ -31,7 +31,7 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
       id: 3,
       name: "HealthSync Pharmacy",
       role: "Pharmacy Services",
-      phone: "+1 (555) 789-0123",
+      phone: "+91 8743XXXX",
       email: "support@healthsyncpharmacy.com",
       availability: "Mon-Sat 8AM-10PM",
       status: "available",
@@ -41,7 +41,7 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
       id: 4,
       name: "Poison Control Center",
       role: "Poison Control",
-      phone: "+1 (800) 222-1222",
+      phone: "+91 9456XXXX",
       email: "info@poison.org",
       availability: "24/7",
       status: "available",
@@ -51,7 +51,7 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
       id: 5,
       name: "Mental Health Crisis Line",
       role: "Crisis Support",
-      phone: "+1 (988) 000-0000",
+      phone: "+91 9456XXXX",
       email: "crisis@mentalhealth.org",
       availability: "24/7",
       status: "available",
@@ -63,10 +63,10 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
     {
       id: 'emergency',
       label: 'Emergency Services',
-      description: 'Call 911 for immediate emergency',
+      description: 'Call 112 for immediate emergency',
       icon: 'Phone',
       color: 'bg-error text-error-foreground',
-      action: () => handleEmergencyCall('911')
+      action: () => handleEmergencyCall('112')
     },
     {
       id: 'doctor',
@@ -182,18 +182,18 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
             <div>
               <h3 className="font-medium text-error mb-1">Medical Emergency?</h3>
               <p className="text-sm text-error/80 mb-3">
-                If you're experiencing a life-threatening emergency, call 911 immediately.
+                If you're experiencing a life-threatening emergency, call 112 immediately.
               </p>
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => handleEmergencyCall('911')}
+                onClick={() => handleEmergencyCall('112')}
                 iconName="Phone"
                 iconPosition="left"
                 iconSize={16}
                 className="breathing-alert"
               >
-                Call 911 Now
+                Call 112 Now
               </Button>
             </div>
           </div>

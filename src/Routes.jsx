@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Import your pages
 import LoginPage from './pages/login';
 import DoctorDashboard from './pages/doctor-dashboard';
+import WelcomePage from './pages/welcome';
 import PatientPortal from './pages/patient-portal';
 import PatientProfile from './pages/patient-profile';
 import PharmacyDashboard from './pages/pharmacy-dashboard';
@@ -93,12 +94,8 @@ const AppRoutes = () => {
       />
 
       {/* Root redirect */}
-      <Route 
-        path="/" 
-        element={
-          user ? <Navigate to={getRoleRoute(user.role)} replace /> : <Navigate to="/login" replace />
-        } 
-      />
+<Route path="/" element={<WelcomePage />} />
+
       
       <Route path="/unauthorized" element={<div>Unauthorized Access</div>} />
       <Route path="*" element={<NotFound />} />
