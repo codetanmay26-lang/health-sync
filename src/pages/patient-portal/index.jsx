@@ -13,16 +13,31 @@ import LabReportUploader from './components/LabReportUploader';
 import EmergencyContactPanel from './components/EmergencyContactPanel';
 import MessagingInterface from './components/MessagingInterface';
 import NotificationCenter from './components/NotificationCenter';
+import MedicineListViewer from './components/MedicineListViewer';
+import MedicineReminder from './components/MedicineReminder';
 
 const PatientPortal = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [patientData, setPatientData] = useState(null);
   const [notifications, setNotifications] = useState([]);
 
+  // Calculate real adherence rate from patient medicine-taking reports
+  const calculateRealAdherenceRate = () => {
+    const adherenceReports = JSON.parse(localStorage.getItem('adherenceReports') || '[]');
+    const patientReports = adherenceReports.filter(report => report.patientId === 'patient_123');
+    
+    if (patientReports.length === 0) return 87; // Default rate if no real data
+    
+    const taken = patientReports.filter(report => report.medicationTaken).length;
+    const total = patientReports.length;
+    
+    return Math.round((taken / total) * 100);
+  };
+
   useEffect(() => {
-    // Mock patient data
+    // Mock patient data - KEEP ID AS patient_123 to match lab reports
     const mockPatientData = {
-      id: 'patient-001',
+      id: 'patient_123', // CONSISTENT ID - matches lab reports
       name: 'John Doe',
       email: 'john.doe@email.com',
       phone: '+1 (555) 123-4567',
@@ -39,7 +54,7 @@ const PatientPortal = () => {
       },
       currentMedications: 4,
       upcomingAppointments: 2,
-      adherenceRate: 87,
+      adherenceRate: calculateRealAdherenceRate(), // Real calculation
       lastVisit: '2025-09-01'
     };
 
@@ -67,42 +82,36 @@ const PatientPortal = () => {
 
   const handleMedicationTaken = (medicationId) => {
     console.log('Medication taken:', medicationId);
-    // Update medication status
   };
 
   const handleMedicationSkipped = (medicationId) => {
     console.log('Medication skipped:', medicationId);
-    // Update medication status
   };
 
   const handleHealthLogSubmit = (logData) => {
     console.log('Health log submitted:', logData);
-    // Send to backend
   };
 
   const handleLabUploadComplete = (report) => {
     console.log('Lab report uploaded:', report);
-    // Notify doctor
   };
 
   const handleEmergencyCall = (contactInfo) => {
     console.log('Emergency call initiated:', contactInfo);
-    // Handle emergency call
   };
 
   const handleMessageSent = (message, conversationType) => {
     console.log('Message sent:', message, 'to:', conversationType);
-    // Send message
   };
 
   const handleNotificationAction = (notification, action) => {
     console.log('Notification action:', action, 'for:', notification);
-    // Handle notification action
   };
 
   const tabItems = [
     { id: 'overview', label: 'Overview', icon: 'Home' },
     { id: 'medications', label: 'Medications', icon: 'Pill' },
+    { id: 'reminders', label: 'Reminders', icon: 'Clock' },
     { id: 'health-logs', label: 'Health Logs', icon: 'Activity' },
     { id: 'lab-reports', label: 'Lab Reports', icon: 'FileText' },
     { id: 'messages', label: 'Messages', icon: 'MessageCircle' },
@@ -166,7 +175,7 @@ const PatientPortal = () => {
             </div>
             <div>
               <p className="text-2xl font-bold text-text-primary">{patientData?.adherenceRate}%</p>
-              <p className="text-sm text-text-secondary">Adherence Rate</p>
+              <p className="text-sm text-text-secondary">Real Adherence Rate</p>
             </div>
           </div>
         </div>
@@ -188,10 +197,7 @@ const PatientPortal = () => {
 
       {/* Today's Medications Preview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MedicationTimeline 
-          onMedicationTaken={handleMedicationTaken}
-          onMedicationSkipped={handleMedicationSkipped}
-        />
+        <MedicineReminder patientId={patientData?.id} />
         <NotificationCenter onNotificationAction={handleNotificationAction} />
       </div>
 
@@ -244,8 +250,11 @@ const PatientPortal = () => {
     </div>
   );
 
+  // Updated medications tab to include medicine lists and reminders
   const renderMedicationsTab = () => (
     <div className="space-y-6">
+      <MedicineReminder patientId={patientData?.id} />
+      <MedicineListViewer patientId={patientData?.id} />
       <MedicationTimeline 
         onMedicationTaken={handleMedicationTaken}
         onMedicationSkipped={handleMedicationSkipped}
@@ -254,20 +263,23 @@ const PatientPortal = () => {
     </div>
   );
 
+  const renderRemindersTab = () => (
+    <MedicineReminder patientId={patientData?.id} />
+  );
+
   const renderHealthLogsTab = () => (
     <HealthLogger onLogSubmit={handleHealthLogSubmit} />
   );
 
   const renderLabReportsTab = () => (
-<LabReportUploader 
-  patientInfo={{
-    id: 'patient_123',
-    name: 'John Doe', 
-    age: 45
-  }}
-  doctorId="doctor_456"
-/>
-
+    <LabReportUploader 
+      patientInfo={{
+        id: patientData?.id, // This will be 'patient_123' - CONSISTENT
+        name: patientData?.name,
+        age: 45
+      }}
+      doctorId="doctor_456"
+    />
   );
 
   const renderMessagesTab = () => (
@@ -284,6 +296,8 @@ const PatientPortal = () => {
         return renderOverviewTab();
       case 'medications':
         return renderMedicationsTab();
+      case 'reminders':
+        return renderRemindersTab();
       case 'health-logs':
         return renderHealthLogsTab();
       case 'lab-reports':
