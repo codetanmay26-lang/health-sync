@@ -11,6 +11,8 @@ import PatientProfile from './pages/patient-profile';
 import PharmacyDashboard from './pages/pharmacy-dashboard';
 import AdminAnalytics from './pages/admin-analytics';
 import NotFound from './pages/NotFound';
+import AnalysisReportsPanel from './pages/doctor-dashboard/components/AnalysisReportsPanel';
+import ReviewedReportsPage from './pages/doctor-dashboard/components/ReviewedReportsPage';
 
 const AppRoutes = () => {
   const { user } = useAuth();
@@ -31,6 +33,25 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={['doctor']}>
             <DoctorDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* 🆕 NEW: Doctor Dashboard Nested Routes */}
+      <Route 
+        path="/doctor-dashboard/analysis-reports" 
+        element={
+          <ProtectedRoute allowedRoles={['doctor']}>
+            <AnalysisReportsPanel />
+          </ProtectedRoute>
+        } 
+      />
+      
+      <Route 
+        path="/doctor-dashboard/reviewed-reports" 
+        element={
+          <ProtectedRoute allowedRoles={['doctor']}>
+            <ReviewedReportsPage />
           </ProtectedRoute>
         } 
       />

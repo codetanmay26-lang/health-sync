@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import Button from '../../../components/ui/Button.jsx';
 import { analyzeLabReport, sendAnalysisToDoctor } from '../../../utils/aiAnalysis';
+import pdfToText from 'react-pdftotext';
+import jsPDF from 'jspdf'; 
 
 export default function LabReportUploader({ patientInfo, doctorId }) {
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -20,19 +22,40 @@ export default function LabReportUploader({ patientInfo, doctorId }) {
   };
 
   const extractTextFromFile = async (file) => {
-    if (file.type === 'text/plain') {
-      return await file.text();
+    try {
+      let text = '';
+      
+      // Handle different file types
+      if (file.type === 'application/pdf') {
+        // Extract text from PDF
+        text = await pdfToText(file);
+      } else if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+        // Read text files directly
+        text = await file.text();
+      } else if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+        // Read CSV files as text
+        text = await file.text();
+      } else {
+        // Try to read as text anyway
+        text = await file.text();
+      }
+      
+      // Check if we got meaningful content
+      if (!text || text.trim().length < 10) {
+        alert('File seems empty or could not be read. Please try uploading a text file or PDF.');
+        return null;
+      }
+      
+      // Clean up the extracted text (remove extra spaces and line breaks)
+      const cleanText = text.replace(/\s+/g, ' ').trim();
+      
+      return cleanText;
+      
+    } catch (error) {
+      console.error('Error extracting text:', error);
+      alert('Could not read this file. Please make sure it\'s a valid PDF or text file.');
+      return null;
     }
-    // Demo content - replace with actual PDF/image text extraction
-    return `Lab Report: ${file.name}
-    
-Patient: ${patientInfo.name}
-Test Results:
-- Glucose: 95 mg/dL (Normal range: 70-100 mg/dL)
-- Cholesterol: 220 mg/dL (High - Normal < 200 mg/dL)
-- Hemoglobin: 14.2 g/dL (Normal range: 13.5-17.5 g/dL)
-- White Blood Cells: 8,500 cells/μL (Normal range: 4,000-11,000 cells/μL)
-- Blood Pressure: 140/90 mmHg (High - Normal < 120/80 mmHg)`;
   };
 
   const handleAnalyzeAndSend = async (reportFile) => {
@@ -40,6 +63,13 @@ Test Results:
     
     try {
       const reportText = await extractTextFromFile(reportFile.file);
+      
+      // Stop if we couldn't read the file
+      if (!reportText) {
+        setAnalyzing(false);
+        return;
+      }
+      
       const analysisResult = await analyzeLabReport(reportText, patientInfo);
       
       if (analysisResult.success) {
@@ -73,6 +103,28 @@ Test Results:
     }
   };
 
+  const downloadAnalysisAsPDF = (analysis, reportName) => {
+    const pdf = new jsPDF();
+    
+    // Add title
+    pdf.setFontSize(16);
+    pdf.text('Medical Lab Report Analysis', 20, 30);
+    
+    // Add report name
+    pdf.setFontSize(12);
+    pdf.text(`Report: ${reportName}`, 20, 50);
+    pdf.text(`Patient: ${patientInfo.name}`, 20, 65);
+    pdf.text(`Date: ${new Date().toLocaleDateString()}`, 20, 80);
+    
+    // Add analysis content
+    pdf.setFontSize(10);
+    const splitText = pdf.splitTextToSize(analysis, 170);
+    pdf.text(splitText, 20, 100);
+    
+    // Download the PDF
+    pdf.save(`${reportName}_analysis.pdf`);
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <div className="flex items-center justify-between mb-4">
@@ -101,8 +153,22 @@ Test Results:
               </div>
               
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">View</Button>
+                {/* Download Analysis button - only shows after analysis */}
+                {report.analyzed && analysisResults[report.id] && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => downloadAnalysisAsPDF(
+                      analysisResults[report.id].analysis, 
+                      report.name
+                    )}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    Download Analysis
+                  </Button>
+                )}
                 
+                {/* AI Analyze button - only shows before analysis */}
                 {!report.analyzed && (
                   <Button 
                     size="sm"
@@ -114,6 +180,7 @@ Test Results:
                   </Button>
                 )}
                 
+                {/* Status indicator - shows after analysis */}
                 {report.analyzed && (
                   <Button variant="outline" size="sm" disabled className="text-green-600">
                     ✓ Analyzed

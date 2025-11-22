@@ -1,30 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../../components/ui/Button.jsx';
+import { useNavigate } from 'react-router-dom';
 
 export default function AnalysisReportsPanel() {
   const [analyses, setAnalyses] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Load analyses from localStorage
+    // Load only UNREVIEWED analyses
     const storedAnalyses = JSON.parse(localStorage.getItem('doctorAnalyses') || '[]');
-    setAnalyses(storedAnalyses.reverse()); // Show newest first
+    const unreviewedAnalyses = storedAnalyses.filter(analysis => !analysis.reviewed);
+    setAnalyses(unreviewedAnalyses.reverse());
   }, []);
 
   const markAsReviewed = (analysisId) => {
-    const updatedAnalyses = analyses.map(analysis => 
+    // Move to reviewed reports
+    const allAnalyses = JSON.parse(localStorage.getItem('doctorAnalyses') || '[]');
+    const updatedAnalyses = allAnalyses.map(analysis => 
       analysis.id === analysisId 
         ? { ...analysis, reviewed: true, reviewedAt: new Date().toLocaleString() }
         : analysis
     );
-    setAnalyses(updatedAnalyses);
-    localStorage.setItem('doctorAnalyses', JSON.stringify(updatedAnalyses.reverse()));
+    localStorage.setItem('doctorAnalyses', JSON.stringify(updatedAnalyses));
+    
+    // Remove from current view
+    setAnalyses(prev => prev.filter(analysis => analysis.id !== analysisId));
   };
 
   return (
     <div className="bg-white p-6 rounded-lg shadow">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-        🤖 AI Analysis Reports ({analyses.length})
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">
+          🤖 New AI Analysis Reports ({analyses.length})
+        </h3>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => navigate('/doctor-dashboard/reviewed-reports')}
+        >
+          View Reviewed Reports
+        </Button>
+      </div>
       
       <div className="space-y-4">
         {analyses.map((analysis) => (
@@ -37,22 +53,22 @@ export default function AnalysisReportsPanel() {
                 <p className="text-sm text-gray-500">
                   Analyzed: {new Date(analysis.timestamp).toLocaleString()}
                 </p>
-                {analysis.reviewed && (
-                  <p className="text-xs text-green-600">
-                    ✓ Reviewed: {analysis.reviewedAt}
-                  </p>
-                )}
               </div>
               
-              {!analysis.reviewed && (
-                <Button 
-                  size="sm"
-                  onClick={() => markAsReviewed(analysis.id)}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Mark as Reviewed
-                </Button>
-              )}
+              <Button 
+                size="sm"
+                onClick={() => markAsReviewed(analysis.id)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                Mark as Reviewed
+              </Button>
+              <Button 
+  variant="outline" 
+  size="sm"
+  onClick={() => navigate('/doctor-dashboard/reviewed-reports')}
+>
+  View Reviewed Reports
+</Button>
             </div>
             
             <div className="bg-gray-50 p-3 rounded text-sm">
@@ -65,7 +81,7 @@ export default function AnalysisReportsPanel() {
         
         {analyses.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            <p>No AI analysis reports yet</p>
+            <p>No new AI analysis reports</p>
             <p className="text-sm">Reports will appear here when patients upload lab results</p>
           </div>
         )}
