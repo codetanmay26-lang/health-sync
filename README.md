@@ -69,7 +69,7 @@ HealthSync bridges the healthcare gap post-discharge by creating a connected car
 
 You can access the live demo of **HealthSync** here:
 
- **Live Deployment:**  https://healthsyc.vercel.app/
+ **Live Deployment:**  https://health-sync-alpha.vercel.app/
 
 ### ▸ Hosting Details
 - **Platform:** Vercel  
@@ -78,11 +78,6 @@ You can access the live demo of **HealthSync** here:
 - **Environment:** Client-side only (demo mode using localStorage)  
 
 >  *Note:* This deployment is for demonstration purposes only — no real medical data is stored or transmitted.
-
-## ▸ Project Demo Video
-
-**Watch the Demo:** [https://youtu.be/RucERM9vARc](https://youtu.be/RucERM9vARc)
-
 
 ## ▸ Demo Data & Privacy
 
