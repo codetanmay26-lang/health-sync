@@ -3,6 +3,19 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const EmergencyAlertsPanel = ({ alerts, onAlertAction, onDismissAlert }) => {
+  // Empty state check - ADD THIS FIRST
+  if (!alerts || alerts.length === 0) {
+    return (
+      <div className="bg-surface border border-border rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-text-primary mb-4">Emergency Alerts</h3>
+        <p className="text-text-secondary text-sm">No active alerts</p>
+      </div>
+    );
+  }
+
+  // Rest of existing code...
+
+
   const [expandedAlert, setExpandedAlert] = useState(null);
   const [filter, setFilter] = useState('all');
 

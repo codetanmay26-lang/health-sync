@@ -106,7 +106,8 @@ const PharmacyDashboard = () => {
         userName="PharmTech Sarah" 
         onToggleSidebar={() => {}} 
       />
-      <EmergencyAlertBanner userRole="pharmacy" alerts={notifications} />
+  {/* <EmergencyAlertBanner userRole="pharmacy" alerts={notifications} /> */}
+
       <div className="pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <BreadcrumbNavigation 
