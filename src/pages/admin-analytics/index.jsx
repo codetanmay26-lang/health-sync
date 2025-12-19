@@ -7,7 +7,6 @@ import AnalyticsChart from './components/AnalyticsChart';
 import SystemStatusPanel from './components/SystemStatusPanel';
 import UserManagementPanel from './components/UserManagementPanel';
 import PredictiveAnalytics from './components/PredictiveAnalytics';
-import ColdChainMonitoring from './components/ColdChainMonitoring';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 
@@ -248,72 +247,6 @@ const AdminAnalytics = () => {
     }
   ];
 
-  // Mock cold chain data
-  const coldChainData = [
-    {
-      id: 'sensor1',
-      name: 'Main Pharmacy Refrigerator',
-      location: 'main-pharmacy',
-      currentTemp: 4.2,
-      minTemp: 2,
-      maxTemp: 8,
-      currentHumidity: 65,
-      minHumidity: 45,
-      maxHumidity: 75,
-      lastUpdate: '2025-01-08T17:45:00Z',
-      medications: ['Insulin', 'Vaccines', 'Biologics']
-    },
-    {
-      id: 'sensor2',
-      name: 'Storage Room A',
-      location: 'storage-room-a',
-      currentTemp: 22.5,
-      minTemp: 15,
-      maxTemp: 25,
-      currentHumidity: 58,
-      minHumidity: 45,
-      maxHumidity: 65,
-      lastUpdate: '2025-01-08T17:44:00Z',
-      medications: ['Tablets', 'Capsules', 'Syrups']
-    },
-    {
-      id: 'sensor3',
-      name: 'Freezer Unit',
-      location: 'refrigerator-1',
-      currentTemp: -18.1,
-      minTemp: -25,
-      maxTemp: -15,
-      currentHumidity: 45,
-      minHumidity: 30,
-      maxHumidity: 60,
-      lastUpdate: '2025-01-08T17:43:00Z',
-      medications: ['Frozen Vaccines', 'Research Samples']
-    }
-  ];
-
-  const breachLogsData = [
-    {
-      id: 'breach1',
-      location: 'Main Pharmacy Refrigerator',
-      severity: 'critical',
-      description: 'Temperature exceeded maximum threshold',
-      timestamp: '2025-01-08T14:30:00Z',
-      duration: '45 minutes',
-      temperature: 12.5,
-      affectedMedications: 23
-    },
-    {
-      id: 'breach2',
-      location: 'Storage Room B',
-      severity: 'warning',
-      description: 'Humidity levels below minimum',
-      timestamp: '2025-01-08T10:15:00Z',
-      duration: '2 hours',
-      temperature: 23.1,
-      affectedMedications: 8
-    }
-  ];
-
   // Mock emergency alerts
   const emergencyAlerts = [
     {
@@ -349,7 +282,6 @@ const AdminAnalytics = () => {
     { id: 'overview', label: 'Overview', icon: 'BarChart3' },
     { id: 'users', label: 'User Management', icon: 'Users' },
     { id: 'predictions', label: 'Predictive Analytics', icon: 'Brain' },
-    { id: 'coldchain', label: 'Cold Chain', icon: 'Thermometer' },
     { id: 'system', label: 'System Status', icon: 'Activity' }
   ];
 
@@ -476,11 +408,6 @@ const AdminAnalytics = () => {
           {activeTab === 'predictions' && (
             <PredictiveAnalytics predictions={predictionsData} mlModels={mlModelsData} />
           )}
-
-          {activeTab === 'coldchain' && (
-            <ColdChainMonitoring coldChainData={coldChainData} breachLogs={breachLogsData} />
-          )}
-
           {activeTab === 'system' && (
             <SystemStatusPanel systemData={systemData} />
           )}

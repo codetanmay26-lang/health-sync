@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import WelcomeHeader from './components/WelcomeHeader';
 import LoginForm from './components/LoginForm';
-import SecurityBadges from './components/SecurityBadges';
 import TestCredentials from './components/TestCredentials';
 
 const LoginPage = () => {
@@ -34,7 +33,6 @@ const LoginPage = () => {
           />
           <TestCredentials onCredentialSelect={handleCredentialSelect} />
         </div>
-        <SecurityBadges />
       </div>
     </div>
   );

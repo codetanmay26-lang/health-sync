@@ -5,22 +5,23 @@ const WelcomeHeader = () => {
   return (
     <div className="text-center space-y-4">
       {/* Logo */}
-      <div className="flex items-center justify-center space-x-3">
-        <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-          <Icon name="Heart" size={28} color="white" />
-        </div>
-        <div className="text-left">
-          <h1 className="text-2xl font-bold text-text-primary">HealthSync</h1>
-          <p className="text-sm text-text-secondary">Healthcare Management</p>
-        </div>
-      </div>
+<div className="flex flex-col items-center space-y-3">
+  <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
+    <Icon name="Heart" size={28} color="white" />
+  </div>
+  <div className="text-center">
+    <h1 className="text-2xl font-bold text-text-primary">HealthSync</h1>
+    <p className="text-sm text-text-secondary">AI-powered Continuity of Care</p>
+  </div>
+</div>
+
       {/* Welcome Message */}
       <div className="space-y-2">
         <h2 className="text-xl font-semibold text-text-primary">
           Welcome Back
         </h2>
         <p className="text-text-secondary max-w-md mx-auto">
-          Sign in to access your healthcare continuity management dashboard and continue providing exceptional patient care.
+          Sign in to manage post-discharge intelligence — optimizing recovery, reducing readmissions, and empowering patients and providers alike.
         </p>
       </div>
       {/* Current Time */}

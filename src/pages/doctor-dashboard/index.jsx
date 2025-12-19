@@ -7,11 +7,16 @@ import SummaryMetricsCards from './components/SummaryMetricsCards';
 import FilterControls from './components/FilterControls';
 import PatientListTable from './components/PatientListTable';
 import EmergencyAlertsPanel from './components/EmergencyAlertsPanel';
+import PatientVitalsPanel from './components/PatientVitalsPanel'; // NEW IMPORT
 import AnalysisReportsPanel from './components/AnalysisReportsPanel';
 import QuickActionsPanel from './components/QuickActionsPanel';
+import Icon from '../../components/AppIcon';
 
 const DoctorDashboard = () => {
   const { user, isLoading } = useAuth();
+
+  // Add active tab state for navigation
+  const [activeTab, setActiveTab] = useState('overview');
 
   // Real patient data - only one patient
   const [realPatients, setRealPatients] = useState([]);
@@ -31,7 +36,7 @@ const DoctorDashboard = () => {
     const adherenceReports = JSON.parse(localStorage.getItem('adherenceReports') || '[]');
     
     // Filter for our one real patient
-    const patientId = 'patient123';
+    const patientId = 'patient_123'; // Updated to match your patient portal
     const realMedicines = patientMedicines.filter(med => med.patientId === patientId);
     const patientAdherence = adherenceReports.filter(report => report.patientId === patientId);
     
@@ -44,7 +49,7 @@ const DoctorDashboard = () => {
     
     // Create real patient object
     const realPatient = {
-      id: 'patient123',
+      id: 'patient_123', // Updated to match
       patientId: 'PT-2024-001',
       name: 'John Doe',
       age: 45,
@@ -128,7 +133,7 @@ const DoctorDashboard = () => {
     ];
   }, [filteredPatients, realAlerts]);
 
-  // Event handlers - FIXED: Added the missing handlePatientClick function
+  // Event handlers
   const handlePatientClick = (patient) => {
     window.location.href = `/patient-profile?id=${patient.id}`;
   };
@@ -148,6 +153,15 @@ const DoctorDashboard = () => {
   const handleMetricClick = (metric) => {
     console.log(`Metric clicked: ${metric.type}`);
   };
+
+  // Tab items for navigation
+  const tabItems = [
+    { id: 'overview', label: 'Overview', icon: 'LayoutDashboard' },
+    { id: 'patients', label: 'Patients', icon: 'Users' },
+    { id: 'vitals', label: 'Patient Vitals', icon: 'Activity' }, // NEW VITALS TAB
+    { id: 'reports', label: 'Reports', icon: 'FileText' },
+    { id: 'analytics', label: 'Analytics', icon: 'TrendingUp' }
+  ];
 
   if (isLoading) {
     return (
@@ -177,53 +191,127 @@ const DoctorDashboard = () => {
             Doctor Dashboard
           </h1>
           <p className="text-text-secondary">
-            Monitor patient adherence - Real data only
+            Monitor patient adherence and vitals - Real data only
           </p>
         </div>
 
-        <div className="space-y-6">
-          <SummaryMetricsCards 
-            metrics={summaryMetrics}
-            onMetricClick={handleMetricClick}
-          />
+        {/* Tab Navigation */}
+        <div className="border-b border-border mb-6">
+          <nav className="flex space-x-8">
+            {tabItems?.map((tab) => (
+              <button
+                key={tab?.id}
+                onClick={() => setActiveTab(tab?.id)}
+                className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-medical ${
+                  activeTab === tab?.id
+                    ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
+                }`}
+              >
+                <Icon name={tab?.icon} size={16} />
+                <span>{tab?.label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div className="xl:col-span-2 space-y-6">
-              <div className="bg-surface border border-border rounded-lg">
-                <div className="p-6 border-b border-border">
-                  <h2 className="text-lg font-semibold text-text-primary mb-4">
-                    Patient Overview - Real Data Only
-                  </h2>
-                  <FilterControls 
-                    onFiltersChange={setFilters}
-                    patientCount={filteredPatients.length}
-                    totalPatients={realPatients.length}
-                    currentFilters={filters}
-                  />
+        {/* Tab Content */}
+        <div className="space-y-6">
+          {/* Overview Tab */}
+          {activeTab === 'overview' && (
+            <>
+              <SummaryMetricsCards 
+                metrics={summaryMetrics}
+                onMetricClick={handleMetricClick}
+              />
+
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div className="xl:col-span-2 space-y-6">
+                  <div className="bg-surface border border-border rounded-lg">
+                    <div className="p-6 border-b border-border">
+                      <h2 className="text-lg font-semibold text-text-primary mb-4">
+                        Patient Overview - Real Data Only
+                      </h2>
+                      <FilterControls 
+                        onFiltersChange={setFilters}
+                        patientCount={filteredPatients.length}
+                        totalPatients={realPatients.length}
+                        currentFilters={filters}
+                      />
+                    </div>
+                    
+                    <PatientListTable 
+                      patients={filteredPatients}
+                      onPatientClick={handlePatientClick}
+                      onBulkMessage={handleBulkMessage}
+                      selectedPatients={selectedPatients}
+                      onPatientSelect={setSelectedPatients}
+                    />
+                  </div>
+
+                  <AnalysisReportsPanel />
                 </div>
-                
-                <PatientListTable 
-                  patients={filteredPatients}
-                  onPatientClick={handlePatientClick}
-                  onBulkMessage={handleBulkMessage}
-                  selectedPatients={selectedPatients}
-                  onPatientSelect={setSelectedPatients}
+
+                <div className="space-y-6">
+                  <EmergencyAlertsPanel 
+                    alerts={realAlerts}
+                    onAlertAction={handleAlertAction}
+                    onDismissAlert={handleDismissAlert}
+                  />
+                  
+                  <QuickActionsPanel />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Patients Tab */}
+          {activeTab === 'patients' && (
+            <div className="bg-surface border border-border rounded-lg">
+              <div className="p-6 border-b border-border">
+                <h2 className="text-lg font-semibold text-text-primary mb-4">
+                  Patient Management
+                </h2>
+                <FilterControls 
+                  onFiltersChange={setFilters}
+                  patientCount={filteredPatients.length}
+                  totalPatients={realPatients.length}
+                  currentFilters={filters}
                 />
               </div>
-
-              <AnalysisReportsPanel />
-            </div>
-
-            <div className="space-y-6">
-              <EmergencyAlertsPanel 
-                alerts={realAlerts}
-                onAlertAction={handleAlertAction}
-                onDismissAlert={handleDismissAlert}
-              />
               
-              <QuickActionsPanel />
+              <PatientListTable 
+                patients={filteredPatients}
+                onPatientClick={handlePatientClick}
+                onBulkMessage={handleBulkMessage}
+                selectedPatients={selectedPatients}
+                onPatientSelect={setSelectedPatients}
+              />
             </div>
-          </div>
+          )}
+
+          {/* NEW VITALS TAB */}
+          {activeTab === 'vitals' && (
+            <div className="space-y-6">
+              <PatientVitalsPanel selectedPatient={filteredPatients[0]} />
+            </div>
+          )}
+
+          {/* Reports Tab */}
+          {activeTab === 'reports' && (
+            <AnalysisReportsPanel />
+          )}
+
+          {/* Analytics Tab */}
+          {activeTab === 'analytics' && (
+            <div className="bg-surface border border-border rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-text-primary mb-4">
+                Patient Analytics
+              </h2>
+              <p className="text-text-secondary">
+                Advanced analytics and insights coming soon...
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

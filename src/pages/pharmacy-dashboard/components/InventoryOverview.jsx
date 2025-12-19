@@ -84,7 +84,6 @@ const InventoryOverview = ({ onViewDetails, onReorderAlert }) => {
         lastRestocked: '2024-11-28',
         monthlyUsage: 18,
         batchNumber: 'INS2024-005',
-        coldChain: true
       }
     ];
     setInventoryData(mockInventory);
@@ -182,12 +181,6 @@ const InventoryOverview = ({ onViewDetails, onReorderAlert }) => {
                   <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(medication?.status)}`}>
                     {medication?.status}
                   </span>
-                  {medication?.coldChain && (
-                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-                      <Icon name="Snowflake" size={12} className="inline mr-1" />
-                      Cold Chain
-                    </span>
-                  )}
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
