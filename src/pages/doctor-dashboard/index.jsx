@@ -9,6 +9,7 @@ import FilterControls from './components/FilterControls';
 import EmergencyAlertsPanel from './components/EmergencyAlertsPanel';
 import AnalysisReportsPanel from './components/AnalysisReportsPanel';
 import QuickActionsPanel from './components/QuickActionsPanel';
+import PrescriptionUploader from './components/PrescriptionUploader';
 
 const DoctorDashboard = () => {
   const { user, isLoading } = useAuth();
@@ -304,70 +305,83 @@ const DoctorDashboard = () => {
   }, [filters, mockPatients]);
 
   // Calculate summary metrics
-  const summaryMetrics = useMemo(() => {
-    const totalPatients = filteredPatients.length;
-    const overallAdherence = totalPatients > 0 
-      ? filteredPatients.reduce((sum, p) => sum + p.adherenceRate, 0) / totalPatients
-      : 0;
+// Replace the summaryMetrics calculation around line 305-343:
+const summaryMetrics = useMemo(() => {
+  const totalPatients = filteredPatients.length;
+  
+  // REAL ADHERENCE CALCULATION from actual patient medicine reports
+  const calculateRealOverallAdherence = () => {
+    const adherenceReports = JSON.parse(localStorage.getItem('adherenceReports') || '[]');
     
-    const activeAlerts = mockAlerts.filter(alert => 
-      alert.active && (alert.roles.includes(user?.role) || alert.roles.includes('all'))
-    ).length;
+    if (adherenceReports.length === 0) return 0;
     
-    const criticalPatients = filteredPatients.filter(p => p.riskLevel === 'Critical').length;
-    const pendingActions = selectedPatients.length + mockAlerts.filter(a => a.priority === 'critical').length;
+    const taken = adherenceReports.filter(report => report.medicationTaken).length;
+    const total = adherenceReports.length;
+    
+    return Math.round((taken / total) * 100);
+  };
 
-    return [
-      {
-        id: 'total-patients',
-        type: 'patients',
-        title: 'Total Patients',
-        value: totalPatients,
-        unit: '',
-        trend: 12,
-        trendPeriod: 'vs last month',
-        description: 'Active monitored patients',
-        target: null,
-        clickable: true
-      },
-      {
-        id: 'overall-adherence',
-        type: 'adherence',
-        title: 'Overall Adherence',
-        value: Math.round(overallAdherence * 10) / 10,
-        unit: '%',
-        trend: 2.1,
-        trendPeriod: 'vs last week',
-        description: 'Average medication adherence',
-        target: 90,
-        clickable: true
-      },
-      {
-        id: 'active-alerts',
-        type: 'alerts',
-        title: 'Active Alerts',
-        value: activeAlerts,
-        unit: '',
-        trend: -3,
-        trendPeriod: 'vs yesterday',
-        description: 'Requiring immediate attention',
-        target: 0,
-        clickable: true
-      },
-      {
-        id: 'critical-patients',
-        type: 'critical',
-        title: 'Critical Patients',
-        value: criticalPatients,
-        unit: '',
-        trend: -1,
-        trendPeriod: 'vs yesterday',
-        description: 'High-risk patients needing attention',
-        target: 0,
-        clickable: true
-      }
-    ];
-  }, [filteredPatients, selectedPatients, mockAlerts, user?.role]);
+  const overallAdherence = calculateRealOverallAdherence();
+  
+  const activeAlerts = mockAlerts.filter(alert => 
+    alert.active && (alert.roles.includes(user?.role) || alert.roles.includes('all'))
+  ).length;
+
+  const criticalPatients = filteredPatients.filter(p => p.riskLevel === 'Critical').length;
+  const pendingActions = selectedPatients.length + mockAlerts.filter(a => a.priority === 'critical').length;
+
+  return [
+    {
+      id: 'total-patients',
+      type: 'patients',
+      title: 'Total Patients',
+      value: totalPatients,
+      unit: '',
+      trend: 12,
+      trendPeriod: 'vs last month',
+      description: 'Active monitored patients',
+      target: null,
+      clickable: true
+    },
+    {
+      id: 'overall-adherence',
+      type: 'adherence',
+      title: 'Overall Adherence',
+      value: overallAdherence, // NOW SHOWS REAL DATA
+      unit: '%',
+      trend: 2.1,
+      trendPeriod: 'vs last week',
+      description: 'Real medication adherence from patient reports', // Updated description
+      target: 90,
+      clickable: true
+    },
+    {
+      id: 'active-alerts',
+      type: 'alerts',
+      title: 'Active Alerts',
+      value: activeAlerts,
+      unit: '',
+      trend: -3,
+      trendPeriod: 'vs yesterday',
+      description: 'Requiring immediate attention',
+      target: 0,
+      clickable: true
+    },
+    {
+      id: 'critical-patients',
+      type: 'critical',
+      title: 'Critical Patients',
+      value: criticalPatients,
+      unit: '',
+      trend: -1,
+      trendPeriod: 'vs yesterday',
+      description: 'High-risk patients needing attention',
+      target: 0,
+      clickable: true
+    }
+  ];
+}, [filteredPatients, selectedPatients, mockAlerts, user?.role]);
+
 
   // Event handlers
   const handlePatientClick = (patient) => {
@@ -467,6 +481,14 @@ const DoctorDashboard = () => {
             showBackButton={false}
             onBack={() => {}}
           />
+<PrescriptionUploader 
+  patientInfo={{
+    id: 'patient_123', // SAME ID as lab reports and patient portal
+    name: 'John Doe',
+    age: 45
+  }}
+  doctorId="doctor_456"
+/>
 
           {/* Page Header */}
           <div className="mb-8">
