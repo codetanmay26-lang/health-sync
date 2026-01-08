@@ -17,91 +17,162 @@ export default function LabReportUploader({ patientInfo, doctorId }) {
   // ✅ USE REAL PATIENT ID
   const realPatientId = user?.id || patientInfo?.id || 'guest';
 
-  // Professional medical report formatting (not AI-looking)
-// Simple, professional medical report format
-const formatAnalysisText = (text) => {
-  if (!text) return null;
+  // Render AI text with headings, bullet lists, and markdown-style tables
+  const formatAnalysisText = (text) => {
+    if (!text) return null;
 
-  let cleanText = text.replace(/\*/g, "");
-  const lines = cleanText.split("\n").filter((line) => line.trim());
+    const cleanText = text.replace(/\*/g, "").replace(/^\s*•\s?/gm, ""); // drop leading bullets
+    const lines = cleanText.split("\n").map((l) => l.trim()).filter(Boolean);
 
-  const sections = [];
-  let currentSection = { title: '', items: [] };
+    const blocks = [];
+    let list = [];
+    let table = [];
 
-  lines.forEach((line, index) => {
-    const trimmedLine = line.trim();
-    if (!trimmedLine) return;
-
-    const isTitle = index === 0;
-    const isSectionHeading = /^\d+\.\s*[A-Z]/.test(trimmedLine);
-    const hasAbnormal = /\b(High|HIGH|Low|LOW|Critical|CRITICAL|Abnormal|ABNORMAL)\b/i.test(trimmedLine);
-
-    if (isTitle) {
-      currentSection.title = trimmedLine;
-    } else if (isSectionHeading) {
-      if (currentSection.items.length > 0) {
-        sections.push({ ...currentSection });
+    const flushList = () => {
+      if (list.length) {
+        blocks.push({ type: "list", items: [...list] });
+        list = [];
       }
-      currentSection = { title: trimmedLine, items: [] };
-    } else {
-      currentSection.items.push({ text: trimmedLine, abnormal: hasAbnormal });
-    }
-  });
+    };
 
-  if (currentSection.items.length > 0) {
-    sections.push(currentSection);
-  }
+    const flushTable = () => {
+      if (table.length) {
+        blocks.push({ type: "table", rows: [...table] });
+        table = [];
+      }
+    };
 
-  return (
-    <div className="space-y-4">
-      {/* Simple Header */}
-      <div className="border-b-2 border-gray-800 pb-2">
-        <h4 className="text-base font-bold text-gray-900 uppercase tracking-wide">
-          Laboratory Analysis Report
+    lines.forEach((line, idx) => {
+      const isHeading = /^#{2,6}\s+/.test(line) || /^\d+\.\s+/.test(line);
+      const isTableRow = line.startsWith("|");
+      const isBullet = /^[-*]\s+/.test(line);
+
+      if (isTableRow) {
+        flushList();
+        const cells = line
+          .split("|")
+          .map((c) => c.trim())
+          .filter((c) => c.length);
+        table.push(cells);
+        return;
+      }
+
+      if (table.length && !isTableRow) {
+        flushTable();
+      }
+
+      if (isHeading) {
+        flushList();
+        flushTable();
+        const level = line.startsWith("###") ? 3 : 2;
+        blocks.push({ type: "heading", level, text: line.replace(/^#+\s*/, "") });
+        return;
+      }
+
+      if (isBullet) {
+        list.push(line.replace(/^[-*]\s+/, ""));
+        return;
+      }
+
+      // Paragraphs: if previous is list, keep adding; else push paragraph
+      if (list.length) {
+        list.push(line);
+      } else {
+        blocks.push({ type: "paragraph", text: line });
+      }
+    });
+
+    flushList();
+    flushTable();
+
+    const renderHeading = (block, i) => {
+      const base = "font-semibold text-gray-900";
+      const cls = block.level === 2 ? `${base} text-base mt-2` : `${base} text-sm`;
+      return (
+        <h4 key={`h-${i}`} className={cls}>
+          {block.text}
         </h4>
-        <p className="text-xs text-gray-600 mt-1">{new Date().toLocaleDateString()}</p>
-      </div>
+      );
+    };
 
-      {/* Sections - Clean & Simple */}
-      {sections.map((section, idx) => (
-        <div key={idx} className="space-y-2">
-          <h5 className="font-semibold text-gray-800 text-sm border-l-3 border-blue-600 pl-3">
-            {section.title}
-          </h5>
-          
-          <div className="space-y-1 pl-3">
-            {section.items.map((item, i) => (
-              <div key={i} className="flex items-start text-sm">
-                <span className="text-gray-400 mr-2">•</span>
-                <p className="text-gray-700 leading-relaxed">
-                  {item.text.split(/\b(High|HIGH|Low|LOW|Critical|CRITICAL|Abnormal|ABNORMAL)\b/i).map((part, j) => {
-                    if (/^(Critical|CRITICAL)$/i.test(part)) {
-                      return <strong key={j} className="text-red-700 font-bold">{part.toUpperCase()}</strong>;
-                    } else if (/^(High|HIGH)$/i.test(part)) {
-                      return <strong key={j} className="text-red-600">{part.toUpperCase()}</strong>;
-                    } else if (/^(Low|LOW)$/i.test(part)) {
-                      return <strong key={j} className="text-orange-600">{part.toUpperCase()}</strong>;
-                    } else if (/^(Abnormal|ABNORMAL)$/i.test(part)) {
-                      return <strong key={j} className="text-yellow-700">{part.toUpperCase()}</strong>;
-                    }
-                    return part;
-                  })}
-                </p>
-              </div>
-            ))}
-          </div>
+    const renderList = (block, i) => (
+      <ul key={`l-${i}`} className="list-disc list-outside pl-5 space-y-1 text-sm text-gray-800">
+        {block.items.map((item, idx) => (
+          <li key={idx} className="leading-relaxed">
+            {item}
+          </li>
+        ))}
+      </ul>
+    );
+
+    const renderParagraph = (block, i) => (
+      <p key={`p-${i}`} className="text-sm text-gray-800 leading-relaxed">
+        {block.text}
+      </p>
+    );
+
+    const renderTable = (block, i) => {
+      const [header = [], ...rows] = block.rows;
+
+      const cellTone = (cell) => {
+        const lc = cell.toLowerCase();
+        if (lc.includes("high")) return "bg-red-50 text-red-800 font-semibold";
+        if (lc.includes("low")) return "bg-amber-50 text-amber-800 font-semibold";
+        if (lc.includes("medium")) return "bg-amber-50 text-amber-800";
+        return "text-gray-800";
+      };
+
+      return (
+        <div key={`t-${i}`} className="overflow-x-auto text-sm">
+          <table className="min-w-full border border-gray-200 text-left">
+            <thead className="bg-gray-50">
+              <tr>
+                {header.map((cell, idx) => (
+                  <th key={idx} className="px-3 py-2 border-b border-gray-200 font-semibold text-gray-900">
+                    {cell}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, ridx) => (
+                <tr key={ridx} className={ridx % 2 ? "bg-white" : "bg-gray-50"}>
+                  {row.map((cell, cidx) => (
+                    <td
+                      key={cidx}
+                      className={`px-3 py-2 border-b border-gray-200 ${cellTone(cell)}`}
+                    >
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      ))}
+      );
+    };
 
-      {/* Simple Footer */}
-      <div className="border-t border-gray-300 pt-3 mt-4">
-        <p className="text-xs text-gray-600">
-          <strong>Note:</strong> This analysis should be reviewed by your physician. Abnormal values require medical attention.
-        </p>
+    return (
+      <div className="space-y-3 text-gray-900">
+        <div className="border-b border-gray-300 pb-2">
+          <h4 className="text-base font-semibold">Lab Report Analysis</h4>
+          <p className="text-xs text-gray-600">{new Date().toLocaleDateString()}</p>
+        </div>
+
+        {blocks.map((block, i) => {
+          if (block.type === "heading") return renderHeading(block, i);
+          if (block.type === "list") return renderList(block, i);
+          if (block.type === "table") return renderTable(block, i);
+          return renderParagraph(block, i);
+        })}
+
+        <div className="border-t border-gray-200 pt-3 text-xs text-gray-600">
+          Note: This analysis should be reviewed by your physician. Abnormal values require medical attention.
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
   const handleFileUpload = (event) => {
     const files = Array.from(event.target.files);
     const newFiles = files.map((file) => ({

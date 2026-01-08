@@ -122,30 +122,34 @@ const LabReportsViewer = ({ labReports, onUploadReport, onViewReport }) => {
           </div>
 
           {/* AI Analysis */}
-          <div className="bg-surface border border-border rounded-lg p-4">
-            <h4 className="font-medium text-text-primary mb-4">AI Analysis Results</h4>
-            <div className="space-y-4">
+          <div className="bg-white border border-border rounded-lg p-4">
+            <h4 className="font-medium text-text-primary mb-3">AI Analysis Results</h4>
+            <div className="space-y-3 text-sm text-gray-800">
               {selectedReport?.aiAnalysis?.map((analysis, index) => (
-                <div key={index} className="border border-border rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-text-primary">{analysis?.parameter}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(analysis?.status)}`}>
-                      {analysis?.status}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-text-secondary">Value:</span>
-                      <p className="font-medium text-text-primary">{analysis?.value}</p>
-                    </div>
-                    <div>
-                      <span className="text-text-secondary">Reference:</span>
-                      <p className="font-medium text-text-primary">{analysis?.reference}</p>
-                    </div>
-                  </div>
-                  {analysis?.notes && (
-                    <p className="text-sm text-text-secondary mt-2">{analysis?.notes}</p>
-                  )}
+                <div key={index} className="border border-gray-200 rounded-md p-3">
+                  <p className="font-semibold text-gray-900 mb-1">{analysis?.parameter || 'Observation'}</p>
+                  <ul className="list-disc list-outside pl-5 space-y-1">
+                    {analysis?.status && (
+                      <li>
+                        Status: {analysis.status}
+                      </li>
+                    )}
+                    {analysis?.value && (
+                      <li>
+                        Value: {analysis.value}
+                      </li>
+                    )}
+                    {analysis?.reference && (
+                      <li>
+                        Reference: {analysis.reference}
+                      </li>
+                    )}
+                    {analysis?.notes && (
+                      <li>
+                        Notes: {analysis.notes}
+                      </li>
+                    )}
+                  </ul>
                 </div>
               ))}
             </div>
