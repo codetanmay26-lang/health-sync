@@ -2,26 +2,93 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const PatientPortalOverview = ({ patientData, onNavigateToTab }) => {
+const PatientPortalOverview = ({ patientData, onNavigateToTab, refreshTrigger }) => {
   const [todayMedications, setTodayMedications] = useState([]);
+  const [activeMedicationsCount, setActiveMedicationsCount] = useState(0);
 
   useEffect(() => {
     loadTodayMedications();
+    updateMedicationsCount();
+  }, [patientData, refreshTrigger]);
+
+  // Listen for medication updates
+  useEffect(() => {
+    const handleMedicationsUpdate = () => {
+      loadTodayMedications();
+    };
+    window.addEventListener('medicationsUpdated', handleMedicationsUpdate);
+    return () => window.removeEventListener('medicationsUpdated', handleMedicationsUpdate);
   }, [patientData]);
 
   const loadTodayMedications = () => {
     const patientId = patientData?.id;
+    if (!patientId) return;
+    
     const medicines = JSON.parse(localStorage.getItem('patientMedicines') || '[]');
-    const patientMeds = medicines.filter(m => m.patientId === patientId);
+    
+    // Try filtering by patientId first
+    let patientMeds = medicines.filter(m => m.patientId === patientId);
+    
+    // If no results, load everything as fallback
+    if (patientMeds.length === 0) {
+      patientMeds = medicines;
+    }
     
     // Get all medicines from all prescription uploads
     const allMeds = patientMeds.flatMap(pm => pm.medicines || []);
     
-    // Filter today's medications (medicines that should be taken today)
-    const today = new Date().toLocaleDateString();
-    const todaysMeds = allMeds.slice(0, 3); // Show first 3 for overview
+    // Show first 3 for overview
+    const todaysMeds = allMeds.slice(0, 3);
     
     setTodayMedications(todaysMeds);
+  };
+
+  const updateMedicationsCount = () => {
+    const patientId = patientData?.id;
+    if (!patientId) return;
+    
+    const medicines = JSON.parse(localStorage.getItem('patientMedicines') || '[]');
+    
+    // Try filtering by patientId first
+    let patientMeds = medicines.filter(m => m.patientId === patientId);
+    
+    // If no results, load everything as fallback
+    if (patientMeds.length === 0) {
+      patientMeds = medicines;
+    }
+    
+    // Count all medications
+    const totalCount = patientMeds.reduce((sum, pm) => sum + (pm.medicines?.length || 0), 0);
+    setActiveMedicationsCount(totalCount);
+  };
+
+  const handleMarkTaken = (medIndex) => {
+    const patientId = patientData?.id;
+    const smartReminders = JSON.parse(localStorage.getItem('smartReminders') || '[]');
+    
+    // Find or create reminder entry for this medication
+    const med = todayMedications[medIndex];
+    const existingIndex = smartReminders.findIndex(
+      r => r.patientId === patientId && r.medicineName === (med.drugName || med.name)
+    );
+
+    if (existingIndex >= 0) {
+      smartReminders[existingIndex].status = 'taken';
+      smartReminders[existingIndex].takenAt = new Date().toISOString();
+    } else {
+      smartReminders.push({
+        id: Date.now(),
+        patientId,
+        medicineName: med.drugName || med.name || 'Medication',
+        status: 'taken',
+        takenAt: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    localStorage.setItem('smartReminders', JSON.stringify(smartReminders));
+    window.dispatchEvent(new Event('medicationsUpdated'));
+    alert('Medication marked as taken!');
   };
   
   if (!patientData) {
@@ -63,7 +130,7 @@ const PatientPortalOverview = ({ patientData, onNavigateToTab }) => {
               <Icon name="Pill" size={20} className="text-purple-600" />
             </div>
             <div className="text-3xl font-bold text-gray-900">
-              {patientData.currentMedications || 0}
+              {activeMedicationsCount}
             </div>
           </div>
           <p className="text-sm text-gray-600 font-medium">Active Medications</p>
@@ -82,16 +149,20 @@ const PatientPortalOverview = ({ patientData, onNavigateToTab }) => {
               <Icon name="TrendingUp" size={20} className="text-green-600" />
             </div>
             <div className="text-3xl font-bold text-gray-900">
-              {patientData.adherenceRate || 0}%
+              {patientData.adherenceRate !== null ? `${patientData.adherenceRate}%` : 'N/A'}
             </div>
           </div>
           <p className="text-sm text-gray-600 font-medium">Adherence Rate</p>
-          <div className="w-full bg-gray-200 rounded-full h-1.5 mt-3">
-            <div 
-              className="bg-green-500 h-1.5 rounded-full transition-all duration-500"
-              style={{ width: `${patientData.adherenceRate || 0}%` }}
-            />
-          </div>
+          {patientData.adherenceRate !== null ? (
+            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-3">
+              <div 
+                className="bg-green-500 h-1.5 rounded-full transition-all duration-500"
+                style={{ width: `${patientData.adherenceRate || 0}%` }}
+              />
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500 mt-2">No medications tracked yet</p>
+          )}
         </div>
 
         {/* Appointments Card */}
@@ -212,7 +283,10 @@ const PatientPortalOverview = ({ patientData, onNavigateToTab }) => {
                       <p className="font-medium text-gray-900 text-sm">{med.drugName || med.name || 'Medication'}</p>
                       <p className="text-xs text-gray-600">{med.dosage || ''} - {med.timings?.join(', ') || med.schedule || 'As prescribed'}</p>
                     </div>
-                    <button className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-xs font-medium hover:bg-green-200">
+                    <button 
+                      onClick={() => handleMarkTaken(i)}
+                      className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-xs font-medium hover:bg-green-200"
+                    >
                       Mark Taken
                     </button>
                   </div>

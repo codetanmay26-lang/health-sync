@@ -4,14 +4,17 @@ import Icon from "../../../components/AppIcon";
 import { analyzePrescription } from "../../../utils/prescriptionAnalysis";
 import Tesseract from "tesseract.js";
 
-export default function PrescriptionUploader({ patientId }) {
+export default function PrescriptionUploader({ patientId: propsPatientId }) {
+  // Use a default patientId if not provided
+  const patientId = propsPatientId || 'patient_123';
+  
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [medicineResults, setMedicineResults] = useState({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingReminders, setPendingReminders] = useState([]);
   const [currentPrescriptionId, setCurrentPrescriptionId] = useState(null);
-  const [isLoading, setIsLoading] = useState(false); // Add loading state
+  const [isLoading, setIsLoading] = useState(false);
 
   // Upload file handling
   const handleFileUpload = (event) => {

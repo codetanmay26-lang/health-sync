@@ -19,18 +19,31 @@ const PatientPortal = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [patientData, setPatientData] = useState(null);
   const [analyzedMedicines, setAnalyzedMedicines] = useState([]);
+  const [allMedications, setAllMedications] = useState([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Calculate real adherence rate
+  // Calculate real adherence rate based on medication tracking
   const calculateRealAdherenceRate = () => {
     const patientId = user?.id || 'patient_123';
-    const adherenceReports = JSON.parse(localStorage.getItem('adherenceReports') || '[]');
-    const patientReports = adherenceReports.filter(report => report.patientId === patientId);
     
-    if (patientReports.length === 0) return 0;
+    // Get all smart reminders for the patient
+    const smartReminders = JSON.parse(localStorage.getItem('smartReminders') || '[]');
+    const patientReminders = smartReminders.filter(r => r.patientId === patientId);
     
-    const taken = patientReports.filter(report => report.medicationTaken).length;
-    return Math.round((taken / patientReports.length) * 100);
+    // If no medications prescribed yet, show "N/A" (return null to handle in UI)
+    if (patientReminders.length === 0) return null;
+    
+    // Count taken vs total for today
+    const today = new Date().toDateString();
+    const todayReminders = patientReminders.filter(r => {
+      const reminderDate = new Date(r.createdAt).toDateString();
+      return reminderDate === today || r.status === 'taken' || r.status === 'pending';
+    });
+    
+    if (todayReminders.length === 0) return 0;
+    
+    const takenCount = todayReminders.filter(r => r.status === 'taken').length;
+    return Math.round((takenCount / todayReminders.length) * 100);
   };
 
   useEffect(() => {
@@ -65,12 +78,31 @@ const PatientPortal = () => {
     setPatientData(mockPatientData);
   }, [user, refreshTrigger]);
 
-  // Load analyzed medicines
+  // Load analyzed medicines and medications list
   useEffect(() => {
     if (patientData?.id) {
+      // Load smart reminders
       const smartReminders = JSON.parse(localStorage.getItem('smartReminders') || '[]');
       const patientReminders = smartReminders.filter(r => r.patientId === patientData.id);
       setAnalyzedMedicines(patientReminders);
+      
+      // Load medications from patientMedicines
+      const patientMedicines = JSON.parse(localStorage.getItem('patientMedicines') || '[]');
+      
+      // Get all medications (simple approach)
+      let allMeds = [];
+      if (patientMedicines.length > 0) {
+        // Filter by patientId first
+        const filteredByPatient = patientMedicines.filter(m => m.patientId === patientData.id);
+        allMeds = filteredByPatient.flatMap(pm => pm.medicines || []);
+        
+        // If no results, load everything as fallback
+        if (allMeds.length === 0) {
+          allMeds = patientMedicines.flatMap(pm => pm.medicines || []);
+        }
+      }
+      
+      setAllMedications(allMeds);
     }
   }, [patientData?.id, refreshTrigger]);
 
@@ -108,23 +140,28 @@ const PatientPortal = () => {
           Medicines from uploaded prescriptions. Upload in "Upload Prescription" tab.
         </p>
         <div className="space-y-3">
-          {analyzedMedicines.map(med => (
-            <div key={med.id} className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          {allMedications.map((med, idx) => (
+            <div key={idx} className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                   <Icon name="Pill" size={20} className="text-blue-600" />
                 </div>
                 <div>
-                  <h4 className="font-medium text-gray-900">{med.medicineName}</h4>
-                  <p className="text-sm text-gray-600">{med.dosage}</p>
+                  <h4 className="font-medium text-gray-900">{med.name || 'Medication'}</h4>
+                  <p className="text-sm text-gray-600">{med.dosage || ''}</p>
+                  <p className="text-xs text-gray-500 mt-1">{med.notes || ''}</p>
                 </div>
               </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getTimingColor(med.timing)}`}>
-                {med.timing}
-              </span>
+              <div className="flex flex-wrap gap-1">
+                {(med.timings || ['morning']).map((timing, tidx) => (
+                  <span key={tidx} className={`px-3 py-1 rounded-full text-xs font-medium border ${getTimingColor(timing)}`}>
+                    {timing}
+                  </span>
+                ))}
+              </div>
             </div>
           ))}
-          {analyzedMedicines.length === 0 && (
+          {allMedications.length === 0 && (
             <div className="text-center py-12">
               <Icon name="Pill" size={48} className="mx-auto mb-4 opacity-30" />
               <h4 className="text-lg font-medium text-gray-900 mb-2">No Medications Found</h4>
@@ -145,6 +182,7 @@ const PatientPortal = () => {
           <PatientPortalOverview
             patientData={patientData}
             onNavigateToTab={setActiveTab}
+            refreshTrigger={refreshTrigger}
           />
         );
       case 'medications': return renderMedicationsTab();
